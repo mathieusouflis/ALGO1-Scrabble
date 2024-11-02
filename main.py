@@ -29,15 +29,15 @@ class Game:
         self.initialise_game()
 
     def generate_letters_usable(self, words: list) -> str:
-        liste_sans_doublons = []
-        word_list = "".join(words)
-        for lettres in word_list:
-         if lettres not in liste_sans_doublons:
-          liste_sans_doublons.append(lettres)
-        shuffle(liste_sans_doublons)
-        liste_sans_doublons = "".join(liste_sans_doublons)
+        # liste_sans_doublons = []
+        # word_list = "".join(words)
+        # for lettres in word_list:
+        #  if lettres not in liste_sans_doublons:
+        #   liste_sans_doublons.append(lettres)
+        # shuffle(liste_sans_doublons)
+        # liste_sans_doublons = "".join(liste_sans_doublons)
 
-        return liste_sans_doublons
+        # return liste_sans_doublons
 
     def initialise_game(self) -> None:
         """
@@ -49,11 +49,11 @@ class Game:
         all_words = json.load(file)["words"]
 
         # Choisir les mots à trouver à partir de la liste de mots
-        list_words_to_find = []
-        i = 0
-        while i < self.number_of_words_to_find:
-            list_words_to_find.append([all_words[randint(0,len(all_words)-1)], 0])
-            i = i + 1
+        # list_words_to_find = []
+        # i = 0
+        # while i < self.number_of_words_to_find:
+        #     list_words_to_find.append([all_words[randint(0,len(all_words)-1)], 0])
+        #     i = i + 1
         print(list_words_to_find) # A SUPP
         self.words = {
             "words": list_words_to_find,
