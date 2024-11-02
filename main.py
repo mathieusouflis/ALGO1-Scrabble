@@ -48,7 +48,7 @@ class Game:
         file = open(self.word_file_path, "r")
         all_words = json.load(file)["words"]
 
-        Choisir les mots à trouver à partir de la liste de mots
+        # Choisir les mots à trouver à partir de la liste de mots
         list_words_to_find = []
         i = 0
         while i < self.number_of_words_to_find:
