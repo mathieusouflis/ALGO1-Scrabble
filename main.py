@@ -1,122 +1,153 @@
 import json
-from rich import box
+import time
+from random import *
 from rich.console import Console
 from rich.table import Table
-
-# def words_file_to_array(file_path):
-#   # Fonction pour ouvrir des fichiers (liste de mots) et renvoyer la liste des mots
-#   file = open(file_path, "r")
-#   return json.load(file)["words"]
-
-# print("Hello [bold magenta]World[/bold magenta]!", ":vampire:")
-
-from rich.prompt import Prompt
-import random
 
 console = Console()
 
 class Game:
-    def __init__(self, words: list) -> None:
-        self.level = 0
-        self.words = words
-        self.words_found = 0
-        self.letters_usable = []
-        words = "".join(words)
-        for i in range(len(words)):
-            if  words[i] not in self.letters_usable:
-                self.letters_usable.append(words[i])
-        random.shuffle(self.letters_usable)
+    def __init__(self) -> None:
+        """
+        Initialisation du jeu
+        Level = Le niveau actuel
+        Words = Les mots a trouver + leurs états + le nombre total de mots trouvés
+        Tries = Le nombre d'essais effectués
+        Score = Le score du joueur
+        Letters usable = Les lettres utilisables pour trouver les mots
+        Words File Path = Le fichier contenant tous les mots
+        Number of words to find = Le nombre de mots a trouver
+        Initialise Game : Assigne des valeurs a words, tries et letters_usable
+        """
+        self.level = 1
+        self.words = None
+        self.tries = None
+        self.score = 0
+        self.letters_usable = None
+        self.word_file_path = "./french.json"
+        self.number_of_words_to_find = 3
+        self.initialise_game()
 
-    def change_words(self, new_list_of_words: list) -> None:
-        self.words = new_list_of_words
+    def generate_letters_usable(self, words: list) -> str:
+        liste_sans_doublons = []
+        word_list = "".join(words)
+        for lettres in word_list:
+         if lettres not in liste_sans_doublons:
+          liste_sans_doublons.append(lettres)
+        shuffle(liste_sans_doublons)
+        liste_sans_doublons = "".join(liste_sans_doublons)
 
-    def change_level(self, level: int) -> None:
-        self.level = level
+        return liste_sans_doublons
 
-    def print_level(self) -> None:
-        console.print(f"Level: {self.level}")
+    def initialise_game(self) -> None:
+        """
+        Cette fonction assigne des valeurs a :
+            self.words : ex - {"words", [["mot1", 0], ["mot2", 0]], "found": 0} le second élément de la liste ["mot1", 0] nous dis si le mot a été trouvé ou non.
+            self.letters_usable : prend toutes les lettres des mots choisis, retire les doublons et les mélanges
+        """
+        file = open(self.word_file_path, "r")
+        all_words = json.load(file)["words"]
 
-    def print_char_to_use(self) -> None:
-        letter_usable_in_color = "[bold]"
-        for i in range(len(self.letters_usable)):
-            if i % 2:
-                letter_usable_in_color += "[yellow]" + self.letters_usable[i] + " "
+        # Choisir les mots à trouver à partir de la liste de mots
+        list_words_to_find = []
+        i = 0
+        while i < self.number_of_words_to_find:
+            list_words_to_find.append([all_words[randint(0,len(all_words)-1)], 0])
+            i = i + 1
+        print(list_words_to_find) # A SUPP
+        self.words = {
+            "words": list_words_to_find,
+            "found": 0
+        }
+        self.letters_usable = self.generate_letters_usable([word[0] for word in list_words_to_find])
+
+    def start(self) -> None:
+        """
+        Cette fonction lance le jeu
+        """
+        while self.level <= 3:
+            self.play_level()
+            console.clear()
+            input(f'Pour passer au niveau {self.level + 1} appuyez sur "ENTRER": ')
+            self.initialise_game()
+        self.end()
+
+    def play_level(self) -> None:
+        """
+        Cette fonction lance un niveau
+        """
+        error = False
+        self.tries = 0
+        while self.words["found"] < self.number_of_words_to_find and (self.level == 1 or self.tries < 10):
+            console.clear()
+            self.print_board(helps=self.level != 2, error=error)
+            word_try = self.get_user_input()
+            if word_try is None:
+                self.level += 1
+                return
+            self.tries += 1
+            is_valid, word_index = self.check_word_validity(word_try)
+            if is_valid:
+                self.words["words"][word_index][1] = 1
+                self.words["found"] += 1
+                error = False
             else:
-                letter_usable_in_color += "[blue]" + self.letters_usable[i] + " "
+                error = True
+        self.tries = 0
+        self.level += 1
 
-        console.print(f"Letters avalable : {letter_usable_in_color}")
+    def get_user_input(self) -> str | None:
+        word_try = input("\n\nYou can write 'Quit' to pass the level.\nWrite a word: ")
+        if word_try.lower() == "quit":
+            console.clear()
+            console.print(f"Arf, tu as abandonné...\nLes mots à trouver étaient : [blue]{self.words['words'][0][0]} [yellow]{self.words['words'][1][0]} [blue]{self.words['words'][2][0]}")
+            input("Appuie sur 'ENTER' pour passer au niveau suivant: ")
+            return None
+        return word_try
 
-    def print_board(self) -> None:
+    def check_word_validity(self, word: str) -> tuple:
+        """
+        Cette fonction regarde si le mot choisis est bien dans la liste des mots a trouver :
+            words : Le mot choisis par l'utilisateur
+        """
+        for i in range(len(self.words["words"])):
+            word_to_find = self.words["words"][i][0]
+            found = self.words["words"][i][1]
+
+            if word.lower() == word_to_find.lower() and not found:
+                return (True, i)
+            elif word.lower() == word_to_find.lower() and found:
+                break
+
+        return (False, None)
+
+    def print_board(self, helps: bool = True, error: bool = False) -> None:
+        """
+        Cette fonction affiche le jeu dans la console:
+            helps : Si True - Affiche une aide sur la longueur des mots -- Si False - Affiche des "..."
+            error : Si True (quand le mot choisis est mauvais) - Affiche un message d'erreur
+        """
         table = Table(show_edge=False, box=False)
-        for i in range(len(self.words)):
+        for i in range(len(self.words["words"])):
             table.add_column(f"Word {i+1}", justify="center")
-        words_length = [len(word) * "_" for word in self.words]
-        table.add_row(*words_length)
+        words_display = [("_" * len(word[0]) if word[1] == 0 else word[0]) for word in self.words["words"]] if helps else ["..."  if word[1] == 0 else word[0] for word in self.words["words"]]
+        table.add_row(*words_display)
 
-        self.print_level()
-        console.print("\n", table, "\n")
+        console.print(f"Level: {self.level}\nTries: {self.tries}\n",table,"\n")
 
-        self.print_char_to_use()
+        if error:
+            console.print("[red]Word incorrect, retry...")
+        letters_display = "[bold]" + " ".join(f"[blue]{letter}" for letter in self.letters_usable)
+        console.print(f"Letters available: {letters_display}")
+
+    def print_score(self):
+        console.print()
     def end(self) -> None:
-        print("END OF THE GAME")
-
-game = Game(["COUCOU", "LA", "TCHEAM"])
-
-game.print_board()
-
-
-def is_choice_legit(choice):
-    for letter in choice:
-        if letter not in game.letters_usable:
-            return False
-
-    return True
+        """
+        Fin du jeu :D
+        """
+        console.print("END OF THE GAME")
 
 
-validity = False
-while validity == False:
-    choice = input("\n\nYou can write 'Quit' to pass the level.\nWrite a word: ")
-
-    if choice.lower() == "quit":
-        game.end()
-    elif is_choice_legit(choice) != True:
-        # ECRIRE QUE L'UTILISATEUR A MIS LES MAUVAISES LETTRES
-        pass
-    else:
-        # Ajouter 1 au nombre de mots trouvés
-        pass
-
-
-
-
-# liste_char ="coucou j'aime les pates et les chiens aussi"
-# char_sans_doublons = ""
-# for i in range(len(liste_char)):
-#     valable = True
-#     for b in range(len(char_sans_doublons)):
-#         if liste_char[i] == char_sans_doublons[b]:
-#             valable = False
-#             break
-#     if valable:
-#         char_sans_doublons += liste_char[i]
-
-# i = 0
-# while i < len(liste_char):
-#     valable = True
-#     b = 0
-#     while b < len(char_sans_doublons)):
-#         if liste_char[i] == char_sans_doublons[b]:
-#             valable = False
-#             b = 0
-#             break
-#         b += 1
-#     if valable:
-#         char_sans_doublons += liste_char[i]
-#     i += 1
-
-# for i in range(len(liste_char)):
-#     if liste_char[i] not in char_sans_doublons:
-#         char_sans_doublons += liste_char[i]
-
-
-# print(char_sans_doublons)
+game = Game()
+game.start()
