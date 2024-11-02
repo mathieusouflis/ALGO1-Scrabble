@@ -78,6 +78,7 @@ class Game:
         """
         error = False
         self.tries = 0
+        self.score = 0
         while self.words["found"] < self.number_of_words_to_find and (self.level == 1 or self.tries < 10):
             console.clear()
             self.print_board(helps=self.level < 3, error=error)
@@ -90,6 +91,7 @@ class Game:
             if is_valid:
                 self.words["words"][word_index][1] = 1
                 self.words["found"] += 1
+                self.score += self.level
                 error = False
             else:
                 error = True
