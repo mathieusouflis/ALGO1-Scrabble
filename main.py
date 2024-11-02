@@ -80,7 +80,7 @@ class Game:
         self.tries = 0
         while self.words["found"] < self.number_of_words_to_find and (self.level == 1 or self.tries < 10):
             console.clear()
-            self.print_board(helps=self.level != 2, error=error)
+            self.print_board(helps=self.level < 3, error=error)
             word_try = self.get_user_input()
             if word_try is None:
                 self.level += 1
